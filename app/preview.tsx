@@ -1,99 +1,214 @@
-import { View, Text, Image, TouchableOpacity, StatusBar, Dimensions, Alert } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { saveToDeviceGallery } from '../utils/imageService';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function Preview() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { imageUrl, prompt } = params;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
 
   const handleSave = async () => {
-    if (imageUrl) {
+    if (imageUrl && !isSaving && !hasSaved) {
+      setIsSaving(true);
       const success = await saveToDeviceGallery(imageUrl as string);
+      setIsSaving(false);
+
       if (success) {
-        Alert.alert('Success', 'Wallpaper saved to your gallery!');
+        setHasSaved(true);
       } else {
-        Alert.alert('Error', 'Failed to save image');
+        Alert.alert('Error', 'Failed to save image.');
       }
     }
   };
 
   if (!imageUrl) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: '#fff' }}>No image data</Text>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: '#0A0A0A',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: '#FAFAFA' }}>Image not found</Text>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#1a1a1a' }}>
-      <StatusBar barStyle='light-content' />
+    <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+      <StatusBar
+        barStyle='light-content'
+        translucent
+        backgroundColor='transparent'
+      />
 
-      {/* Image Preview */}
-      <View style={{ flex: 1, padding: 20, justifyContent: 'center' }}>
-        <Image
-          source={{ uri: imageUrl as string }}
+      {/* Edge-to-Edge Image */}
+      <Image
+        source={{ uri: imageUrl as string }}
+        style={{
+          width,
+          height,
+          position: 'absolute',
+        }}
+        resizeMode='cover'
+      />
+
+      {/* Subtle Gradient Overlay at bottom for text readability */}
+      <LinearGradient
+        colors={['transparent', 'rgba(10, 10, 10, 0.9)']}
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: height * 0.4,
+        }}
+      />
+
+      {/* Top Floating Action Button - Back */}
+      <TouchableOpacity
+        onPress={() => router.back()}
+        style={{
+          position: 'absolute',
+          top: 50,
+          left: 20,
+          zIndex: 10,
+        }}
+        activeOpacity={0.7}
+      >
+        <BlurView
+          intensity={80}
+          tint='dark'
           style={{
-            width: width * 0.9,
-            height: (width * 0.9 * 19) / 10,
-            borderRadius: 20,
-            marginTop: 30,
-            alignSelf: 'center',
-          }}
-          resizeMode='cover'
-        />
-        <Text
-          style={{
-            color: '#999',
-            fontSize: 14,
-            textAlign: 'center',
-            marginTop: 20,
-            paddingHorizontal: 20,
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            justifyContent: 'center',
+            alignItems: 'center',
+            overflow: 'hidden',
           }}
         >
-          {prompt}
-        </Text>
-      </View>
+          <Ionicons
+            name='chevron-back'
+            size={24}
+            color='#FAFAFA'
+            style={{ marginLeft: -2 }}
+          />
+        </BlurView>
+      </TouchableOpacity>
 
-      {/* Action Buttons */}
+      {/* Bottom Content Area */}
       <View
         style={{
-          flexDirection: 'row',
-          padding: 20,
-          gap: 10,
-          marginBottom: 20,
+          position: 'absolute',
+          bottom: 40,
+          left: 20,
+          right: 20,
         }}
       >
+        {/* Prompt Text */}
         <TouchableOpacity
-          style={{
-            flex: 1,
-            backgroundColor: '#2a2a2a',
-            padding: 18,
-            borderRadius: 12,
-            alignItems: 'center',
-          }}
-          onPress={() => router.back()}
+          activeOpacity={0.8}
+          onPress={() => setIsExpanded(!isExpanded)}
         >
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
-            Back to Gallery
+          <Text
+            style={{
+              color: '#FAFAFA',
+              fontSize: 16,
+              fontWeight: '500',
+              lineHeight: 24,
+              marginBottom: 24,
+              textShadowColor: 'rgba(0, 0, 0, 0.5)',
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 4,
+            }}
+            numberOfLines={isExpanded ? undefined : 3}
+          >
+            "{prompt}"
           </Text>
         </TouchableOpacity>
+
+        {/* Floating Action Button - Save */}
         <TouchableOpacity
-          style={{
-            flex: 1,
-            backgroundColor: '#7aa4b4ff',
-            padding: 18,
-            borderRadius: 12,
-            alignItems: 'center',
-          }}
           onPress={handleSave}
+          activeOpacity={0.8}
+          disabled={isSaving || hasSaved}
         >
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
-            Save to Device
-          </Text>
+          <BlurView
+            intensity={80}
+            tint='light' // Contrasting button
+            style={{
+              paddingVertical: 16,
+              borderRadius: 20,
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              opacity: hasSaved ? 0.8 : 1,
+            }}
+          >
+            {isSaving ? (
+              <ActivityIndicator size='small' color='#0A0A0A' />
+            ) : hasSaved ? (
+              <>
+                <Ionicons
+                  name='checkmark-circle'
+                  size={20}
+                  color='#0A0A0A'
+                  style={{ marginRight: 8 }}
+                />
+                <Text
+                  style={{
+                    color: '#0A0A0A',
+                    fontSize: 16,
+                    fontWeight: '600',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Saved to Gallery
+                </Text>
+              </>
+            ) : (
+              <>
+                <Ionicons
+                  name='download-outline'
+                  size={20}
+                  color='#0A0A0A'
+                  style={{ marginRight: 8 }}
+                />
+                <Text
+                  style={{
+                    color: '#0A0A0A',
+                    fontSize: 16,
+                    fontWeight: '600',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Save Wallpaper
+                </Text>
+              </>
+            )}
+          </BlurView>
         </TouchableOpacity>
       </View>
     </View>
