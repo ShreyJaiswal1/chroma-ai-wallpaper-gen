@@ -1,6 +1,7 @@
 import { Dialog } from '@/src/shared/ui/organisms/dialog';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -322,6 +323,17 @@ export default function Preview() {
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => setIsExpanded(!isExpanded)}
+          onLongPress={async () => {
+            if (currentItem?.prompt) {
+              await Clipboard.setStringAsync(currentItem.prompt);
+              setDialogConfig({
+                visible: true,
+                title: 'Copied!',
+                message: 'Prompt copied to clipboard.',
+                type: 'success',
+              });
+            }
+          }}
         >
           <Text
             style={{

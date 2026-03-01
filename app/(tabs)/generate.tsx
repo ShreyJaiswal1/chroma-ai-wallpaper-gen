@@ -87,11 +87,13 @@ export default function Generate() {
       return;
     }
 
+    const promptToGenerate = prompt;
     Keyboard.dismiss();
+    setPrompt('');
     setIsGenerating(true);
 
     try {
-      const newImage = await generateImage(prompt);
+      const newImage = await generateImage(promptToGenerate);
 
       if (newImage) {
         const currentGallery = await loadGallery();
@@ -112,7 +114,6 @@ export default function Generate() {
       });
     } finally {
       setIsGenerating(false);
-      setPrompt('');
     }
   };
 
