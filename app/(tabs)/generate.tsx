@@ -303,7 +303,7 @@ export default function Generate() {
             style={{
               flexDirection: 'row',
               padding: 8,
-              alignItems: 'center',
+              alignItems: 'flex-end',
             }}
           >
             {/* Surprise Me Button */}
@@ -331,13 +331,15 @@ export default function Generate() {
                 color: '#FAFAFA',
                 fontSize: 15,
                 paddingHorizontal: 8,
-                paddingVertical: 12,
+                paddingTop: 12,
+                paddingBottom: 12,
+                maxHeight: 100,
               }}
+              multiline={true}
               placeholder='Imagine something beautiful...'
               placeholderTextColor='#666'
               value={prompt}
               onChangeText={setPrompt}
-              onSubmitEditing={handleGenerate}
               editable={!isGenerating && !isSurprising}
             />
 
