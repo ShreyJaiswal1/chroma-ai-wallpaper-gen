@@ -95,6 +95,8 @@ export const generateImage = async (
       headers: {
         Authorization: `Bearer ${A4F_API_KEY}`,
         'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Origin: 'http://localhost',
       },
       body: JSON.stringify({
         model: 'provider-4/imagen-4',
@@ -144,6 +146,8 @@ export const generatePromptIdea = async (): Promise<string | null> => {
         headers: {
           Authorization: `Bearer ${GROQ_API_KEY}`,
           'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Origin: 'http://localhost',
         },
         body: JSON.stringify({
           model: 'openai/gpt-oss-120b',
@@ -187,7 +191,9 @@ export const saveToDeviceGallery = async (
   imageUrl: string,
 ): Promise<boolean> => {
   try {
-    const { status } = await MediaLibrary.requestPermissionsAsync(true);
+    const { status } = await MediaLibrary.requestPermissionsAsync(false, [
+      'photo',
+    ]);
     if (status !== 'granted') {
       console.error('Media library permission not granted');
       return false;

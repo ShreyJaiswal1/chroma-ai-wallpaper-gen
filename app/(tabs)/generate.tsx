@@ -1,3 +1,4 @@
+import { Dialog } from '@/src/shared/ui/organisms/dialog';
 import {
   generateImage,
   generatePromptIdea,
@@ -11,9 +12,10 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
+  Dimensions,
   Image,
   Keyboard,
+  KeyboardAvoidingView,
   Platform,
   StatusBar,
   Text,
@@ -25,10 +27,27 @@ import {
 export default function Generate() {
   const router = useRouter();
 
+  const { width } = Dimensions.get('window');
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSurprising, setIsSurprising] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<any>(null);
+
+  // Dialog State Management
+  const [dialogConfig, setDialogConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error';
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'error',
+  });
+
+  const closeDialog = () =>
+    setDialogConfig((prev) => ({ ...prev, visible: false }));
 
   const handleSurpriseMe = async () => {
     setIsSurprising(true);
@@ -37,10 +56,20 @@ export default function Generate() {
       if (idea) {
         setPrompt(idea);
       } else {
-        Alert.alert('Oops', 'Failed to generate an idea. Try again!');
+        setDialogConfig({
+          visible: true,
+          title: 'Oops',
+          message: 'Failed to generate an idea. Try again!',
+          type: 'error',
+        });
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong.');
+      setDialogConfig({
+        visible: true,
+        title: 'Error',
+        message: 'Something went wrong.',
+        type: 'error',
+      });
     } finally {
       setIsSurprising(false);
     }
@@ -48,7 +77,13 @@ export default function Generate() {
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      Alert.alert('Error', 'Please enter a prompt');
+      setDialogConfig({
+        visible: true,
+        title: 'Prompt Required',
+        message:
+          'Please enter a description or use Surprise Me to generate an idea.',
+        type: 'error',
+      });
       return;
     }
 
@@ -64,10 +99,17 @@ export default function Generate() {
         await saveGallery(updatedGallery);
 
         setGeneratedImage(newImage);
+      } else {
+        throw new Error('Image generation failed');
       }
     } catch (error) {
       console.error('Error generating image:', error);
-      Alert.alert('Error', 'Failed to generate image. Please try again.');
+      setDialogConfig({
+        visible: true,
+        title: 'Generation Failed',
+        message: 'We were unable to create your masterpiece. Please try again.',
+        type: 'error',
+      });
     } finally {
       setIsGenerating(false);
       setPrompt('');
@@ -75,7 +117,11 @@ export default function Generate() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: '#0A0A0A' }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
       <StatusBar barStyle='light-content' />
 
       {/* Header */}
@@ -163,6 +209,7 @@ export default function Generate() {
               router.push({
                 pathname: '/preview',
                 params: {
+                  initialImageId: generatedImage.id,
                   imageUrl: generatedImage.url,
                   prompt: generatedImage.prompt,
                 },
@@ -318,6 +365,121 @@ export default function Generate() {
           </View>
         </BlurView>
       </View>
-    </View>
+
+      {/* Dynamic Status Dialog */}
+      {dialogConfig.visible && (
+        <Dialog>
+          <AutoTrigger />
+          <Dialog.Backdrop
+            blurAmount={15}
+            backgroundColor='rgba(0, 0, 0, 0.6)'
+          />
+
+          <Dialog.Content onClose={closeDialog}>
+            <View
+              style={{
+                backgroundColor: '#171717',
+                borderRadius: 24,
+                padding: 24,
+                width: width * 0.85,
+                alignSelf: 'center',
+                borderWidth: 1,
+                borderColor: '#333',
+              }}
+            >
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  backgroundColor:
+                    dialogConfig.type === 'error'
+                      ? 'rgba(255, 60, 60, 0.1)'
+                      : 'rgba(52, 199, 89, 0.1)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 16,
+                  alignSelf: 'center',
+                }}
+              >
+                <Ionicons
+                  name={
+                    dialogConfig.type === 'error'
+                      ? 'warning-outline'
+                      : 'checkmark-circle-outline'
+                  }
+                  size={24}
+                  color={dialogConfig.type === 'error' ? '#FF3B30' : '#34C759'}
+                />
+              </View>
+
+              <Text
+                style={{
+                  color: '#FAFAFA',
+                  fontSize: 20,
+                  fontWeight: '700',
+                  textAlign: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                {dialogConfig.title}
+              </Text>
+              <Text
+                style={{
+                  color: '#A3A3A3',
+                  fontSize: 15,
+                  textAlign: 'center',
+                  marginBottom: 24,
+                  lineHeight: 22,
+                }}
+              >
+                {dialogConfig.message}
+              </Text>
+
+              <Dialog.Close asChild>
+                <TouchableOpacity
+                  style={{
+                    width: '100%',
+                    paddingVertical: 14,
+                    borderRadius: 12,
+                    backgroundColor: '#262626',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: '#FAFAFA',
+                      fontSize: 16,
+                      fontWeight: '600',
+                    }}
+                  >
+                    Got it
+                  </Text>
+                </TouchableOpacity>
+              </Dialog.Close>
+            </View>
+          </Dialog.Content>
+        </Dialog>
+      )}
+    </KeyboardAvoidingView>
   );
 }
+
+// Helper component to auto-trigger the Reacticx Dialog once mounted
+const AutoTrigger = () => {
+  return (
+    <Dialog.Trigger asChild>
+      <AutoClickView />
+    </Dialog.Trigger>
+  );
+};
+
+// Ensure trigger fires
+const AutoClickView = ({ onPress }: any) => {
+  useEffect(() => {
+    if (onPress) {
+      setTimeout(onPress, 50);
+    }
+  }, [onPress]);
+  return <View style={{ display: 'none' }} />;
+};
