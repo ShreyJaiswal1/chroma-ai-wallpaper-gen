@@ -8,12 +8,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   StatusBar,
   Text,
@@ -52,6 +52,7 @@ export default function Generate() {
       return;
     }
 
+    Keyboard.dismiss();
     setIsGenerating(true);
 
     try {
@@ -74,10 +75,7 @@ export default function Generate() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: '#0A0A0A' }}
-    >
+    <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
       <StatusBar barStyle='light-content' />
 
       {/* Header */}
@@ -238,7 +236,7 @@ export default function Generate() {
       <View
         style={{
           position: 'absolute',
-          bottom: 140, // Moved upwards because tabs are hiding it
+          bottom: 120,
           left: 20,
           right: 20,
         }}
@@ -320,6 +318,6 @@ export default function Generate() {
           </View>
         </BlurView>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
