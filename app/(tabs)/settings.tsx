@@ -343,7 +343,7 @@ export default function Settings() {
         <View style={{ gap: 16, marginBottom: 20 }}>
           <Text
             style={{
-              color: '#FF3B30',
+              color: '#a7a7a7ff',
               fontSize: 13,
               fontWeight: '600',
               textTransform: 'uppercase',
@@ -360,11 +360,11 @@ export default function Settings() {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: 'rgba(255, 59, 48, 0.05)',
+              backgroundColor: 'rgba(250, 250, 250, 0.05)',
               padding: 16,
               borderRadius: 16,
               borderWidth: 1,
-              borderColor: 'rgba(255, 59, 48, 0.2)',
+              borderColor: 'rgba(110, 110, 110, 0.2)',
             }}
           >
             <View
@@ -386,13 +386,13 @@ export default function Settings() {
             </View>
             <View style={{ flex: 1 }}>
               <Text
-                style={{ color: '#FF3B30', fontSize: 16, fontWeight: '600' }}
+                style={{ color: '#ffffffff', fontSize: 16, fontWeight: '600' }}
               >
                 Clear Cache & Data
               </Text>
               <Text
                 style={{
-                  color: 'rgba(255, 59, 48, 0.8)',
+                  color: 'rgba(177, 177, 177, 0.8)',
                   fontSize: 13,
                   marginTop: 2,
                 }}

@@ -120,7 +120,7 @@ export default function Generate() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: '#0A0A0A' }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <StatusBar barStyle='light-content' />
@@ -157,7 +157,7 @@ export default function Generate() {
           alignItems: 'center',
           paddingHorizontal: 24,
           paddingBottom: 100,
-          marginBottom: 100, // Increased padding to stay clear of the fixed input
+          marginBottom: 120, // Increased padding to stay clear of the fixed input
         }}
       >
         {isGenerating ? (

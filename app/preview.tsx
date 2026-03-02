@@ -36,6 +36,7 @@ export default function Preview() {
   const [gallery, setGallery] = useState<WallpaperImage[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [savingStatus, setSavingStatus] = useState<
     Record<string, 'saving' | 'saved'>
   >({});
@@ -204,22 +205,31 @@ export default function Preview() {
   const renderItem = ({ item }: { item: WallpaperImage }) => {
     return (
       <View style={{ width, height }}>
-        <Image
-          source={{ uri: item.url }}
+        <TouchableOpacity
+          activeOpacity={1}
           style={{ width: '100%', height: '100%' }}
-          resizeMode='cover'
-        />
+          onPress={() => setIsFullScreen((prev) => !prev)}
+        >
+          <Image
+            source={{ uri: item.url }}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode='cover'
+          />
+        </TouchableOpacity>
         {/* Subtle Gradient Overlay at bottom for text readability */}
-        <LinearGradient
-          colors={['transparent', 'rgba(10, 10, 10, 0.9)']}
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: height * 0.4,
-          }}
-        />
+        {!isFullScreen && (
+          <LinearGradient
+            colors={['transparent', 'rgba(10, 10, 10, 0.9)']}
+            pointerEvents='none'
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: height * 0.4,
+            }}
+          />
+        )}
       </View>
     );
   };
@@ -236,6 +246,7 @@ export default function Preview() {
         barStyle='light-content'
         translucent
         backgroundColor='transparent'
+        hidden={isFullScreen}
       />
 
       <FlatList
@@ -256,42 +267,45 @@ export default function Preview() {
         })}
         windowSize={5}
         removeClippedSubviews={false}
+        extraData={isFullScreen}
       />
 
       {/* Top Floating Action Button - Back */}
-      <TouchableOpacity
-        onPress={() => router.back()}
-        style={{
-          position: 'absolute',
-          top: 50,
-          left: 20,
-          zIndex: 10,
-        }}
-        activeOpacity={0.7}
-      >
-        <BlurView
-          intensity={80}
-          tint='dark'
+      {!isFullScreen && (
+        <TouchableOpacity
+          onPress={() => router.back()}
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            justifyContent: 'center',
-            alignItems: 'center',
-            overflow: 'hidden',
+            position: 'absolute',
+            top: 50,
+            left: 20,
+            zIndex: 10,
           }}
+          activeOpacity={0.7}
         >
-          <Ionicons
-            name='chevron-back'
-            size={24}
-            color='#FAFAFA'
-            style={{ marginLeft: -2 }}
-          />
-        </BlurView>
-      </TouchableOpacity>
+          <BlurView
+            intensity={80}
+            tint='dark'
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              justifyContent: 'center',
+              alignItems: 'center',
+              overflow: 'hidden',
+            }}
+          >
+            <Ionicons
+              name='chevron-back'
+              size={24}
+              color='#FAFAFA'
+              style={{ marginLeft: -2 }}
+            />
+          </BlurView>
+        </TouchableOpacity>
+      )}
 
       {/* Pagination Indicator (Subtle) */}
-      {gallery.length > 1 && (
+      {!isFullScreen && gallery.length > 1 && (
         <View
           style={{
             position: 'absolute',
@@ -311,176 +325,178 @@ export default function Preview() {
       )}
 
       {/* Bottom Content Area */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: 40,
-          left: 20,
-          right: 20,
-        }}
-      >
-        {/* Prompt Text */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => setIsExpanded(!isExpanded)}
-          onLongPress={async () => {
-            if (currentItem?.prompt) {
-              await Clipboard.setStringAsync(currentItem.prompt);
-              setDialogConfig({
-                visible: true,
-                title: 'Copied!',
-                message: 'Prompt copied to clipboard.',
-                type: 'success',
-              });
-            }
+      {!isFullScreen && (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 40,
+            left: 20,
+            right: 20,
           }}
         >
-          <Text
-            style={{
-              color: '#FAFAFA',
-              fontSize: 16,
-              fontWeight: '500',
-              lineHeight: 24,
-              marginBottom: 24,
-              textShadowColor: 'rgba(0, 0, 0, 0.5)',
-              textShadowOffset: { width: 0, height: 1 },
-              textShadowRadius: 4,
+          {/* Prompt Text */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setIsExpanded(!isExpanded)}
+            onLongPress={async () => {
+              if (currentItem?.prompt) {
+                await Clipboard.setStringAsync(currentItem.prompt);
+                setDialogConfig({
+                  visible: true,
+                  title: 'Copied!',
+                  message: 'Prompt copied to clipboard.',
+                  type: 'success',
+                });
+              }
             }}
-            numberOfLines={isExpanded ? undefined : 3}
           >
-            "{currentItem?.prompt}"
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={{
+                color: '#FAFAFA',
+                fontSize: 16,
+                fontWeight: '500',
+                lineHeight: 24,
+                marginBottom: 24,
+                textShadowColor: 'rgba(0, 0, 0, 0.5)',
+                textShadowOffset: { width: 0, height: 1 },
+                textShadowRadius: 4,
+              }}
+              numberOfLines={isExpanded ? undefined : 3}
+            >
+              "{currentItem?.prompt}"
+            </Text>
+          </TouchableOpacity>
 
-        {/* Floating Action Button - Save */}
-        <TouchableOpacity
-          onPress={() => handleSave(currentItem)}
-          activeOpacity={0.8}
-          disabled={isSavingCurrent || hasSavedCurrent}
-        >
-          <BlurView
-            intensity={80}
-            tint='light' // Contrasting button
-            style={{
-              paddingVertical: 16,
-              borderRadius: 20,
-              alignItems: 'center',
-              flexDirection: 'row',
-              justifyContent: 'center',
-              overflow: 'hidden',
-              opacity: hasSavedCurrent ? 0.8 : 1,
-            }}
+          {/* Floating Action Button - Save */}
+          <TouchableOpacity
+            onPress={() => handleSave(currentItem)}
+            activeOpacity={0.8}
+            disabled={isSavingCurrent || hasSavedCurrent}
           >
-            {isSavingCurrent ? (
-              <ActivityIndicator size='small' color='#0A0A0A' />
-            ) : hasSavedCurrent ? (
-              <>
-                <Ionicons
-                  name='checkmark-circle'
-                  size={20}
-                  color='#0A0A0A'
-                  style={{ marginRight: 8 }}
-                />
-                <Text
-                  style={{
-                    color: '#0A0A0A',
-                    fontSize: 16,
-                    fontWeight: '600',
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  Saved to Gallery
-                </Text>
-              </>
-            ) : (
-              <>
-                <Ionicons
-                  name='download-outline'
-                  size={20}
-                  color='#0A0A0A'
-                  style={{ marginRight: 8 }}
-                />
-                <Text
-                  style={{
-                    color: '#0A0A0A',
-                    fontSize: 16,
-                    fontWeight: '600',
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  Save Wallpaper
-                </Text>
-              </>
-            )}
-          </BlurView>
-        </TouchableOpacity>
+            <BlurView
+              intensity={80}
+              tint='light' // Contrasting button
+              style={{
+                paddingVertical: 16,
+                borderRadius: 20,
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                opacity: hasSavedCurrent ? 0.8 : 1,
+              }}
+            >
+              {isSavingCurrent ? (
+                <ActivityIndicator size='small' color='#0A0A0A' />
+              ) : hasSavedCurrent ? (
+                <>
+                  <Ionicons
+                    name='checkmark-circle'
+                    size={20}
+                    color='#0A0A0A'
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text
+                    style={{
+                      color: '#0A0A0A',
+                      fontSize: 16,
+                      fontWeight: '600',
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    Saved to Gallery
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons
+                    name='download-outline'
+                    size={20}
+                    color='#0A0A0A'
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text
+                    style={{
+                      color: '#0A0A0A',
+                      fontSize: 16,
+                      fontWeight: '600',
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    Save Wallpaper
+                  </Text>
+                </>
+              )}
+            </BlurView>
+          </TouchableOpacity>
 
-        {/* Floating Action Button - Set Wallpaper */}
-        <TouchableOpacity
-          onPress={() => handleSetWallpaper(currentItem)}
-          activeOpacity={0.8}
-          disabled={isSettingCurrent || hasSetCurrent}
-          style={{ marginTop: 12 }}
-        >
-          <BlurView
-            intensity={80}
-            tint='dark'
-            style={{
-              paddingVertical: 16,
-              borderRadius: 20,
-              alignItems: 'center',
-              flexDirection: 'row',
-              justifyContent: 'center',
-              overflow: 'hidden',
-              borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.1)',
-              opacity: hasSetCurrent ? 0.8 : 1,
-            }}
+          {/* Floating Action Button - Set Wallpaper */}
+          <TouchableOpacity
+            onPress={() => handleSetWallpaper(currentItem)}
+            activeOpacity={0.8}
+            disabled={isSettingCurrent || hasSetCurrent}
+            style={{ marginTop: 12 }}
           >
-            {isSettingCurrent ? (
-              <ActivityIndicator size='small' color='#FAFAFA' />
-            ) : hasSetCurrent ? (
-              <>
-                <Ionicons
-                  name='checkmark-circle'
-                  size={20}
-                  color='#FAFAFA'
-                  style={{ marginRight: 8 }}
-                />
-                <Text
-                  style={{
-                    color: '#FAFAFA',
-                    fontSize: 16,
-                    fontWeight: '600',
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  Applied as Wallpaper
-                </Text>
-              </>
-            ) : (
-              <>
-                <Ionicons
-                  name='color-wand-outline'
-                  size={20}
-                  color='#FAFAFA'
-                  style={{ marginRight: 8 }}
-                />
-                <Text
-                  style={{
-                    color: '#FAFAFA',
-                    fontSize: 16,
-                    fontWeight: '600',
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  Set as Wallpaper
-                </Text>
-              </>
-            )}
-          </BlurView>
-        </TouchableOpacity>
-      </View>
+            <BlurView
+              intensity={80}
+              tint='dark'
+              style={{
+                paddingVertical: 16,
+                borderRadius: 20,
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                opacity: hasSetCurrent ? 0.8 : 1,
+              }}
+            >
+              {isSettingCurrent ? (
+                <ActivityIndicator size='small' color='#FAFAFA' />
+              ) : hasSetCurrent ? (
+                <>
+                  <Ionicons
+                    name='checkmark-circle'
+                    size={20}
+                    color='#FAFAFA'
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text
+                    style={{
+                      color: '#FAFAFA',
+                      fontSize: 16,
+                      fontWeight: '600',
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    Applied as Wallpaper
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons
+                    name='color-wand-outline'
+                    size={20}
+                    color='#FAFAFA'
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text
+                    style={{
+                      color: '#FAFAFA',
+                      fontSize: 16,
+                      fontWeight: '600',
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    Set as Wallpaper
+                  </Text>
+                </>
+              )}
+            </BlurView>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Dynamic Status Dialog */}
       {dialogConfig.visible && (
