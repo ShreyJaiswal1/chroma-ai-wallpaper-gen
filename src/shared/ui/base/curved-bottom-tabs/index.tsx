@@ -1,4 +1,5 @@
-import React, { memo, useEffect, useRef, useState } from "react";
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import {
   Keyboard,
   Platform,
@@ -7,35 +8,34 @@ import {
   TouchableOpacity,
   View,
   ViewStyle,
-} from "react-native";
+} from 'react-native';
 import Animated, {
-  useSharedValue,
   useAnimatedStyle,
+  useSharedValue,
   withSpring,
   type SharedValue,
-} from "react-native-reanimated";
+} from 'react-native-reanimated';
 import Svg, {
   Circle,
   Defs,
-  LinearGradient as SvgGradient,
   Path,
   Stop,
-} from "react-native-svg";
-import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import type {
-  BackgroundCurveProps,
-  CurvedBottomTabsProps,
-  FloatingButtonComponentProps,
-  StyleConfig,
-  Tab,
-  CurvedTabBarNavigationProps,
-} from "./types";
+  LinearGradient as SvgGradient,
+} from 'react-native-svg';
 import {
   calculateTabPosition,
   processGradient,
   VIEWPORT_HEIGHT,
   VIEWPORT_WIDTH,
-} from "./helper";
+} from './helper';
+import type {
+  BackgroundCurveProps,
+  CurvedBottomTabsProps,
+  CurvedTabBarNavigationProps,
+  FloatingButtonComponentProps,
+  StyleConfig,
+  Tab,
+} from './types';
 
 const FloatingButtonComponent: React.FC<FloatingButtonComponentProps> =
   memo<FloatingButtonComponentProps>(
@@ -51,37 +51,37 @@ const FloatingButtonComponent: React.FC<FloatingButtonComponentProps> =
       return (
         <View
           style={{
-            alignItems: "center",
-            justifyContent: "center",
-            position: "relative",
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
             ...shadow,
           }}
         >
           <Svg width={buttonSize} height={buttonSize}>
             <Defs>
               <SvgGradient
-                id="floatingButtonGradient"
-                x1="0%"
-                y1="25%"
-                x2="80%"
-                y2="100%"
+                id='floatingButtonGradient'
+                x1='0%'
+                y1='25%'
+                x2='80%'
+                y2='100%'
               >
-                <Stop offset="0%" stopColor={gradient[0]} />
-                <Stop offset="100%" stopColor={gradient[1]} />
+                <Stop offset='0%' stopColor={gradient[0]} />
+                <Stop offset='100%' stopColor={gradient[1]} />
               </SvgGradient>
             </Defs>
             <Circle
               cx={buttonSize / 2}
               cy={buttonSize / 2}
               r={buttonSize / 2.2}
-              fill="url(#floatingButtonGradient)"
+              fill='url(#floatingButtonGradient)'
             />
           </Svg>
           <View
             style={{
-              position: "absolute",
-              alignItems: "center",
-              justifyContent: "center",
+              position: 'absolute',
+              alignItems: 'center',
+              justifyContent: 'center',
               width: buttonSize,
               height: buttonSize,
             }}
@@ -91,26 +91,26 @@ const FloatingButtonComponent: React.FC<FloatingButtonComponentProps> =
           {badge !== undefined && badge > 0 && (
             <View
               style={{
-                position: "absolute",
+                position: 'absolute',
                 top: -5,
                 right: -10,
-                backgroundColor: "#ff4444",
+                backgroundColor: '#ff4444',
                 borderRadius: 10,
                 minWidth: 20,
                 height: 20,
-                alignItems: "center",
-                justifyContent: "center",
+                alignItems: 'center',
+                justifyContent: 'center',
                 paddingHorizontal: 4,
               }}
             >
               <Text
                 style={{
-                  color: "white",
+                  color: 'white',
                   fontSize: 10,
-                  fontWeight: "bold",
+                  fontWeight: 'bold',
                 }}
               >
-                {badge > 99 ? "99+" : badge.toString()}
+                {badge > 99 ? '99+' : badge.toString()}
               </Text>
             </View>
           )}
@@ -165,24 +165,24 @@ const BackgroundCurve: React.FC<BackgroundCurveProps> =
       }));
 
       return (
-        <View style={{ overflow: "hidden", width: screenWidth }}>
+        <View style={{ overflow: 'hidden', width: screenWidth }}>
           <Animated.View style={animatedStyle}>
             <Svg
               width={totalWidth}
               height={height}
-              preserveAspectRatio="none"
+              preserveAspectRatio='none'
               viewBox={`0 0 ${totalWidth} ${height}`}
-              fill="none"
+              fill='none'
             >
-              <Path d={path} fill="url(#curveGradient)" />
+              <Path d={path} fill='url(#curveGradient)' />
               <Defs>
                 <SvgGradient
-                  id="curveGradient"
+                  id='curveGradient'
                   x1={0}
                   y1={height * 0.8}
                   x2={totalWidth}
                   y2={height * 0.8}
-                  gradientUnits="userSpaceOnUse"
+                  gradientUnits='userSpaceOnUse'
                 >
                   <Stop offset={0.0576923} stopColor={gradient[0]} />
                   <Stop offset={0.903846} stopColor={gradient[1]} />
@@ -203,15 +203,15 @@ const CurvedBottomTabsCore: React.FC<CurvedBottomTabsProps> =
       gradient,
       barHeight = 9,
       buttonScale = 6,
-      activeColor = "#ffffff",
-      inactiveColor = "#cccccc",
-      labelColor = "#cccccc",
+      activeColor = '#ffffff',
+      inactiveColor = '#cccccc',
+      labelColor = '#cccccc',
       textSize = 12,
       fontFamily,
       hideWhenKeyboardShown = false,
       animation = { damping: 12, stiffness: 120, mass: 0.5 },
       shadow = {
-        shadowColor: "#000",
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.2,
         shadowRadius: 20,
@@ -230,10 +230,10 @@ const CurvedBottomTabsCore: React.FC<CurvedBottomTabsProps> =
       useEffect(() => {
         if (!hideWhenKeyboardShown) return;
 
-        const showListener = Keyboard.addListener("keyboardDidShow", () => {
+        const showListener = Keyboard.addListener('keyboardDidShow', () => {
           setKeyboardVisible(true);
         });
-        const hideListener = Keyboard.addListener("keyboardDidHide", () => {
+        const hideListener = Keyboard.addListener('keyboardDidHide', () => {
           setKeyboardVisible(false);
         });
 
@@ -339,7 +339,7 @@ const CurvedBottomTabsCore: React.FC<CurvedBottomTabsProps> =
                         {tab.badge !== undefined && tab.badge > 0 && (
                           <View style={styles.badgeContainer}>
                             <Text style={styles.badgeLabel}>
-                              {tab.badge > 99 ? "99+" : tab.badge.toString()}
+                              {tab.badge > 99 ? '99+' : tab.badge.toString()}
                             </Text>
                           </View>
                         )}
@@ -366,56 +366,56 @@ const createStyles = <T extends StyleConfig>({
 }: T) =>
   StyleSheet.create({
     wrapper: {
-      position: "absolute",
+      position: 'absolute',
       bottom: 0,
-      alignSelf: "center",
-      backgroundColor: "transparent",
-      justifyContent: "space-between",
+      alignSelf: 'center',
+      backgroundColor: 'transparent',
+      justifyContent: 'space-between',
       height: Math.ceil(VIEWPORT_HEIGHT * barHeight),
-      flexDirection: "row",
-      width: "100%",
+      flexDirection: 'row',
+      width: '100%',
     },
     backgroundContainer: {
-      position: "absolute",
+      position: 'absolute',
       bottom: 0,
       zIndex: 20,
-      width: "100%",
+      width: '100%',
     },
     tabWrapper: {
       flex: 1,
       zIndex: 30,
     },
     tabTouchable: {
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: 'center',
+      justifyContent: 'center',
       flex: 1,
-      paddingBottom: Platform.OS === "ios" ? VIEWPORT_HEIGHT * 0.98 : 0,
+      paddingBottom: Platform.OS === 'ios' ? VIEWPORT_HEIGHT * 0.98 : 0,
     },
     tabLabel: {
       fontSize: textSize,
       fontFamily,
-      textAlign: "center",
+      textAlign: 'center',
       marginTop: 10,
     },
     iconWrapper: {
-      position: "relative",
+      position: 'relative',
     },
     badgeContainer: {
-      position: "absolute",
+      position: 'absolute',
       top: -5,
       right: -10,
-      backgroundColor: "#ff4444",
+      backgroundColor: '#ff4444',
       borderRadius: 10,
       minWidth: 20,
       height: 20,
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: 'center',
+      justifyContent: 'center',
       paddingHorizontal: 4,
     },
     badgeLabel: {
-      color: "white",
+      color: 'white',
       fontSize: 10,
-      fontWeight: "bold",
+      fontWeight: 'bold',
     },
   });
 
@@ -428,7 +428,7 @@ export const CurvedBottomTabs: React.FC<
       state,
       descriptors,
       navigation,
-      gradients = ["#121212", "#1A1A1A"],
+      gradients = ['#121212', '#1A1A1A'],
     }) => {
       const tabs: Tab[] = state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
@@ -437,7 +437,7 @@ export const CurvedBottomTabs: React.FC<
         return {
           id: route.key,
           title:
-            typeof options.tabBarLabel === "string"
+            typeof options.tabBarLabel === 'string'
               ? options.tabBarLabel
               : options.title !== undefined
                 ? options.title
@@ -445,12 +445,12 @@ export const CurvedBottomTabs: React.FC<
           icon: options?.tabBarIcon
             ? options.tabBarIcon({
                 focused: isActive,
-                color: isActive ? "#ffffff" : "#cccccc",
+                color: isActive ? '#ffffff' : '#cccccc',
                 size: 24,
               })
             : null,
           badge:
-            typeof options.tabBarBadge === "number"
+            typeof options.tabBarBadge === 'number'
               ? options.tabBarBadge
               : undefined,
         };
@@ -460,7 +460,7 @@ export const CurvedBottomTabs: React.FC<
         const route = state.routes[index];
 
         const event = navigation.emit({
-          type: "tabPress",
+          type: 'tabPress',
           target: route.key,
           canPreventDefault: true,
         });

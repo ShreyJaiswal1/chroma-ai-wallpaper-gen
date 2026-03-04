@@ -1,3 +1,6 @@
+import { AutoTrigger } from '@/src/shared/ui/base/auto-trigger';
+import { PromptInput } from '@/src/shared/ui/base/prompt-input';
+import { StyleSelector } from '@/src/shared/ui/base/style-selector';
 import { Dialog } from '@/src/shared/ui/organisms/dialog';
 import {
   generateImage,
@@ -6,20 +9,18 @@ import {
   saveGallery,
 } from '@/utils/imageService';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Dimensions,
   Image,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -32,6 +33,39 @@ export default function Generate() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSurprising, setIsSurprising] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<any>(null);
+  const [selectedStyle, setSelectedStyle] = useState('none');
+
+  // Animated value for input bar bottom position
+  const INPUT_RESTING_BOTTOM = 110;
+  const inputBottom = useRef(new Animated.Value(INPUT_RESTING_BOTTOM)).current;
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      Animated.spring(inputBottom, {
+        toValue: e.endCoordinates.height + 10,
+        useNativeDriver: false,
+        friction: 8,
+        tension: 80,
+      }).start();
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      Animated.spring(inputBottom, {
+        toValue: INPUT_RESTING_BOTTOM,
+        useNativeDriver: false,
+        friction: 8,
+        tension: 80,
+      }).start();
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Dialog State Management
   const [dialogConfig, setDialogConfig] = useState<{
@@ -93,7 +127,7 @@ export default function Generate() {
     setIsGenerating(true);
 
     try {
-      const newImage = await generateImage(promptToGenerate);
+      const newImage = await generateImage(promptToGenerate, selectedStyle);
 
       if (newImage) {
         const currentGallery = await loadGallery();
@@ -118,11 +152,7 @@ export default function Generate() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#0A0A0A' }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+    <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
       <StatusBar barStyle='light-content' />
 
       {/* Header */}
@@ -149,6 +179,12 @@ export default function Generate() {
         </Text>
       </View>
 
+      {/* Style Selector */}
+      <StyleSelector
+        selectedStyle={selectedStyle}
+        onStyleChange={setSelectedStyle}
+      />
+
       {/* Main Content Area */}
       <View
         style={{
@@ -156,15 +192,14 @@ export default function Generate() {
           justifyContent: 'center',
           alignItems: 'center',
           paddingHorizontal: 24,
-          paddingBottom: 100,
-          marginBottom: 120, // Increased padding to stay clear of the fixed input
+          paddingBottom: 60,
+          marginBottom: 80,
         }}
       >
         {isGenerating ? (
-          // Skeleton Loader
           <View
             style={{
-              height: '80%', // Replaced width constraint with a height constraint so it scales perfectly vertically
+              height: '80%',
               aspectRatio: 9 / 16,
               maxWidth: 320,
               backgroundColor: '#171717',
@@ -189,11 +224,10 @@ export default function Generate() {
             </Text>
           </View>
         ) : generatedImage ? (
-          // Showcased Image (Small Form)
           <TouchableOpacity
             activeOpacity={0.9}
             style={{
-              height: '80%', // Replaced width constraint with a height constraint here too
+              height: '80%',
               aspectRatio: 9 / 16,
               maxWidth: 320,
               borderRadius: 24,
@@ -222,7 +256,6 @@ export default function Generate() {
               style={{ width: '100%', height: '100%' }}
               resizeMode='cover'
             />
-            {/* Minimal gradient for the "tap to preview" affordance */}
             <LinearGradient
               colors={['transparent', 'rgba(10,10,10,0.8)']}
               style={{
@@ -263,7 +296,6 @@ export default function Generate() {
             </LinearGradient>
           </TouchableOpacity>
         ) : (
-          // Default Empty State
           <View style={{ alignItems: 'center', opacity: 0.5 }}>
             <Ionicons name='color-wand-outline' size={64} color='#FAFAFA' />
             <Text
@@ -281,93 +313,15 @@ export default function Generate() {
       </View>
 
       {/* Floating Prompt Input */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: 120,
-          left: 20,
-          right: 20,
-        }}
-      >
-        <BlurView
-          intensity={80}
-          tint='dark'
-          style={{
-            borderRadius: 24,
-            overflow: 'hidden',
-            backgroundColor: 'rgba(23, 23, 23, 0.7)',
-            borderWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.1)',
-          }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              padding: 8,
-              alignItems: 'flex-end',
-            }}
-          >
-            {/* Surprise Me Button */}
-            <TouchableOpacity
-              onPress={handleSurpriseMe}
-              disabled={isSurprising || isGenerating}
-              style={{
-                width: 44,
-                height: 44,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-              activeOpacity={0.7}
-            >
-              {isSurprising ? (
-                <ActivityIndicator size='small' color='#A3A3A3' />
-              ) : (
-                <Ionicons name='dice-outline' size={24} color='#A3A3A3' />
-              )}
-            </TouchableOpacity>
-
-            <TextInput
-              style={{
-                flex: 1,
-                color: '#FAFAFA',
-                fontSize: 15,
-                paddingHorizontal: 8,
-                paddingTop: 12,
-                paddingBottom: 12,
-                maxHeight: 100,
-              }}
-              multiline={true}
-              placeholder='Imagine something beautiful...'
-              placeholderTextColor='#666'
-              value={prompt}
-              onChangeText={setPrompt}
-              editable={!isGenerating && !isSurprising}
-            />
-
-            {/* Generate Button */}
-            <TouchableOpacity
-              style={{
-                backgroundColor: isGenerating ? '#333' : '#FAFAFA',
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginLeft: 8,
-              }}
-              onPress={handleGenerate}
-              disabled={isGenerating || !prompt.trim() || isSurprising}
-              activeOpacity={0.8}
-            >
-              {isGenerating ? (
-                <ActivityIndicator size='small' color='#A3A3A3' />
-              ) : (
-                <Ionicons name='sparkles' size={20} color='#0A0A0A' />
-              )}
-            </TouchableOpacity>
-          </View>
-        </BlurView>
-      </View>
+      <PromptInput
+        prompt={prompt}
+        onChangePrompt={setPrompt}
+        onGenerate={handleGenerate}
+        onSurpriseMe={handleSurpriseMe}
+        isGenerating={isGenerating}
+        isSurprising={isSurprising}
+        bottomPosition={inputBottom}
+      />
 
       {/* Dynamic Status Dialog */}
       {dialogConfig.visible && (
@@ -464,25 +418,6 @@ export default function Generate() {
           </Dialog.Content>
         </Dialog>
       )}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
-
-// Helper component to auto-trigger the Reacticx Dialog once mounted
-const AutoTrigger = () => {
-  return (
-    <Dialog.Trigger asChild>
-      <AutoClickView />
-    </Dialog.Trigger>
-  );
-};
-
-// Ensure trigger fires
-const AutoClickView = ({ onPress }: any) => {
-  useEffect(() => {
-    if (onPress) {
-      setTimeout(onPress, 50);
-    }
-  }, [onPress]);
-  return <View style={{ display: 'none' }} />;
-};

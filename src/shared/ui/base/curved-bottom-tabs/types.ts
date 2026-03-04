@@ -1,5 +1,5 @@
-import { ViewStyle } from "react-native";
-import { SharedValue } from "react-native-reanimated";
+import { ViewStyle } from 'react-native';
+import { SharedValue } from 'react-native-reanimated';
 
 interface Tab {
   id: string;
@@ -16,11 +16,11 @@ interface AnimationConfig {
 
 interface ShadowStyle extends Pick<
   ViewStyle,
-  | "shadowColor"
-  | "shadowOffset"
-  | "shadowOpacity"
-  | "shadowRadius"
-  | "elevation"
+  | 'shadowColor'
+  | 'shadowOffset'
+  | 'shadowOpacity'
+  | 'shadowRadius'
+  | 'elevation'
 > {}
 
 interface CurvedBottomTabsProps {
@@ -92,15 +92,6 @@ interface CurvedTabBarNavigationProps {
 }
 
 export type {
-  Tab,
-  AnimationConfig,
-  ShadowStyle,
-  CurvedBottomTabsProps,
-  FloatingButtonComponentProps,
-  BackgroundCurveProps,
-  StyleConfig,
-  GradientTuple,
-  NavigationState,
-  NavigationDescriptor,
-  CurvedTabBarNavigationProps,
+    AnimationConfig, BackgroundCurveProps, CurvedBottomTabsProps, CurvedTabBarNavigationProps, FloatingButtonComponentProps, GradientTuple, NavigationDescriptor, NavigationState, ShadowStyle, StyleConfig, Tab
 };
+

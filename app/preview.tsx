@@ -1,10 +1,11 @@
+import { AutoTrigger } from '@/src/shared/ui/base/auto-trigger';
 import { Dialog } from '@/src/shared/ui/organisms/dialog';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -168,9 +169,12 @@ export default function Preview() {
     }
   }, []);
 
-  const viewabilityConfig = {
-    itemVisiblePercentThreshold: 50,
-  };
+  const viewabilityConfig = useMemo(
+    () => ({
+      itemVisiblePercentThreshold: 50,
+    }),
+    [],
+  );
 
   if (isLoading) {
     return (
@@ -596,22 +600,3 @@ export default function Preview() {
     </View>
   );
 }
-
-// Helper component to auto-trigger the Reacticx Dialog once mounted
-const AutoTrigger = () => {
-  return (
-    <Dialog.Trigger asChild>
-      <AutoClickView />
-    </Dialog.Trigger>
-  );
-};
-
-// Ensure trigger fires
-const AutoClickView = ({ onPress }: any) => {
-  useEffect(() => {
-    if (onPress) {
-      setTimeout(onPress, 50);
-    }
-  }, [onPress]);
-  return <View style={{ display: 'none' }} />;
-};

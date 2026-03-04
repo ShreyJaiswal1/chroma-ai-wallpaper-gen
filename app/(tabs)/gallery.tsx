@@ -1,8 +1,9 @@
+import { AutoTrigger } from '@/src/shared/ui/base/auto-trigger';
 import { Dialog } from '@/src/shared/ui/organisms/dialog';
-import { loadGallery, saveGallery } from '@/utils/imageService';
+import { loadGallery, saveGallery, WallpaperImage } from '@/utils/imageService';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -15,14 +16,9 @@ import {
 
 export default function Gallery() {
   const router = useRouter();
-  type WallpaperImage = {
-    id: string;
-    url: string;
-    prompt: string;
-    timestamp: string;
-  };
 
   const [gallery, setGallery] = useState<WallpaperImage[]>([]);
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const { width } = Dimensions.get('window');
 
   useFocusEffect(
@@ -36,7 +32,7 @@ export default function Gallery() {
     setGallery(data);
   };
 
-  const handleImagePress = (image: any) => {
+  const handleImagePress = (image: WallpaperImage) => {
     router.push({
       pathname: '/preview',
       params: {
@@ -47,12 +43,10 @@ export default function Gallery() {
     });
   };
 
-  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-
   const confirmDelete = async () => {
     if (selectedImageId) {
       const updatedGallery = gallery.filter(
-        (img: any) => img.id !== selectedImageId,
+        (img) => img.id !== selectedImageId,
       );
       setGallery(updatedGallery);
       await saveGallery(updatedGallery);
@@ -64,18 +58,13 @@ export default function Gallery() {
     setSelectedImageId(null);
   };
 
-  const handleDeleteImage = (imageId: string) => {
-    setSelectedImageId(imageId);
-  };
-
   // Split gallery into two columns for true masonry
   const leftColumn = gallery.filter((_, i) => i % 2 === 0);
   const rightColumn = gallery.filter((_, i) => i % 2 !== 0);
 
-  const renderColumnItem = (image: any, index: number, isLeft: boolean) => {
-    // Generate deterministic but varied heights based on ID for a natural masonry look
+  const renderColumnItem = (image: WallpaperImage) => {
     const charCode = image.id.charCodeAt(image.id.length - 1) || 0;
-    const height = 200 + (charCode % 3) * 60; // Heights will be 200, 260, or 320
+    const height = 200 + (charCode % 3) * 60;
 
     return (
       <TouchableOpacity
@@ -85,7 +74,7 @@ export default function Gallery() {
           marginBottom: 16,
         }}
         onPress={() => handleImagePress(image)}
-        onLongPress={() => handleDeleteImage(image.id)}
+        onLongPress={() => setSelectedImageId(image.id)}
         activeOpacity={0.8}
       >
         <Image
@@ -136,7 +125,7 @@ export default function Gallery() {
       {/* Gallery - True Masonry Layout */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 120 }} // padding for tabs
+        contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
         {gallery.length === 0 ? (
@@ -182,30 +171,23 @@ export default function Gallery() {
               flexDirection: 'row',
               paddingHorizontal: 16,
               paddingTop: 8,
-              gap: 16, // Space between columns
+              gap: 16,
             }}
           >
-            {/* Left Column */}
             <View style={{ flex: 1 }}>
-              {leftColumn.map((img, i) => renderColumnItem(img, i, true))}
+              {leftColumn.map((img) => renderColumnItem(img))}
             </View>
-
-            {/* Right Column */}
             <View style={{ flex: 1, paddingTop: 32 }}>
-              {/* Padding top staggers the start of the right column for better masonry feel */}
-              {rightColumn.map((img, i) => renderColumnItem(img, i, false))}
+              {rightColumn.map((img) => renderColumnItem(img))}
             </View>
           </View>
         )}
       </ScrollView>
 
-      {/* Reacticx Dialog for Deletion Confirmation */}
+      {/* Delete Confirmation Dialog */}
       {selectedImageId && (
         <Dialog>
-          {/* We must render a Trigger to actually make the Dialog open. 
-              We can use auto-triggering on mount with a ref */}
           <AutoTrigger />
-
           <Dialog.Backdrop
             blurAmount={15}
             backgroundColor='rgba(0, 0, 0, 0.6)'
@@ -312,23 +294,3 @@ export default function Gallery() {
     </View>
   );
 }
-
-// Helper component to auto-trigger the Reacticx Dialog once mounted
-const AutoTrigger = () => {
-  return (
-    <Dialog.Trigger asChild>
-      <AutoClickView />
-    </Dialog.Trigger>
-  );
-};
-
-// We need a view that takes the 'onPress' prop injected by Dialog.Trigger
-const AutoClickView = ({ onPress }: any) => {
-  useEffect(() => {
-    if (onPress) {
-      // Slight delay ensures the modal mounts before we try to open it
-      setTimeout(onPress, 50);
-    }
-  }, [onPress]);
-  return <View style={{ display: 'none' }} />;
-};

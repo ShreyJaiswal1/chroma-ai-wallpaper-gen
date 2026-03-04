@@ -1,3 +1,6 @@
+import { AutoTrigger } from '@/src/shared/ui/base/auto-trigger';
+import { InsightCard } from '@/src/shared/ui/base/insight-card';
+import { SettingsRow } from '@/src/shared/ui/base/settings-row';
 import { Dialog } from '@/src/shared/ui/organisms/dialog';
 import { loadGallery } from '@/utils/imageService';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +10,6 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Linking from 'expo-linking';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Dimensions,
   ScrollView,
   StatusBar,
@@ -23,6 +25,10 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isClearing, setIsClearing] = useState(false);
   const [isConfirmDialogVisible, setIsConfirmDialogVisible] = useState(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+
+  const GITHUB_REPO = 'ShreyJaiswal1/ai-wallpaper-app';
+  const currentVersion = Constants.expoConfig?.version ?? '1.0.0';
 
   // Dialog State Management
   const [dialogConfig, setDialogConfig] = useState<{
@@ -74,10 +80,8 @@ export default function Settings() {
   const handleClearCache = async () => {
     setIsClearing(true);
     try {
-      // 1. Delete AsyncStorage Gallery Data
       await AsyncStorage.removeItem('@wallpaper_gallery');
 
-      // 2. Delete all cached files in the FileSystem documentDirectory
       const dirUrl = FileSystem.documentDirectory;
       if (dirUrl) {
         const files = await FileSystem.readDirectoryAsync(dirUrl);
@@ -88,10 +92,8 @@ export default function Settings() {
         }
       }
 
-      // 3. Refresh Insights visually
       await fetchInsights();
 
-      // 4. Show Success Dialog
       setDialogConfig({
         visible: true,
         title: 'Cache Cleared',
@@ -113,7 +115,72 @@ export default function Settings() {
   };
 
   const handleOpenGithub = () => {
-    Linking.openURL('https://github.com/ShreyJaiswal1/ai-wallpaper-app');
+    Linking.openURL(`https://github.com/${GITHUB_REPO}`);
+  };
+
+  const handleCheckForUpdate = async () => {
+    setIsCheckingUpdate(true);
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
+      );
+      if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
+      const release = await res.json();
+
+      const latestVersion = (release.tag_name || '').replace(/^v/, '');
+
+      if (!latestVersion) {
+        throw new Error('Could not determine latest version');
+      }
+
+      const isNewer = latestVersion !== currentVersion;
+
+      if (!isNewer) {
+        setDialogConfig({
+          visible: true,
+          title: 'Up to Date',
+          message: `You're already on the latest version (v${currentVersion}).`,
+          type: 'success',
+        });
+        return;
+      }
+
+      const apkAsset = release.assets?.find((a: any) =>
+        a.name?.endsWith('.apk'),
+      );
+
+      if (apkAsset?.browser_download_url) {
+        setDialogConfig({
+          visible: true,
+          title: 'Update Available',
+          message: `v${latestVersion} is available (you have v${currentVersion}). Downloading the update now...`,
+          type: 'success',
+        });
+        await Linking.openURL(apkAsset.browser_download_url);
+      } else {
+        setDialogConfig({
+          visible: true,
+          title: 'Update Available',
+          message: `v${latestVersion} is available. Opening the release page...`,
+          type: 'success',
+        });
+        await Linking.openURL(
+          release.html_url ||
+            `https://github.com/${GITHUB_REPO}/releases/latest`,
+        );
+      }
+    } catch (error) {
+      console.error('Update check failed:', error);
+      setDialogConfig({
+        visible: true,
+        title: 'Update Check Failed',
+        message:
+          'Could not reach GitHub. Please check your internet connection and try again.',
+        type: 'error',
+      });
+    } finally {
+      setIsCheckingUpdate(false);
+    }
   };
 
   return (
@@ -158,90 +225,19 @@ export default function Settings() {
           </Text>
 
           <View style={{ flexDirection: 'row', gap: 16 }}>
-            {/* Total Images Card */}
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: '#171717',
-                padding: 20,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: '#262626',
-              }}
-            >
-              <Ionicons
-                name='images-outline'
-                size={24}
-                color='#FAFAFA'
-                style={{ marginBottom: 16 }}
-              />
-              {isLoading ? (
-                <ActivityIndicator
-                  size='small'
-                  color='#FAFAFA'
-                  style={{ alignSelf: 'flex-start', marginVertical: 4 }}
-                />
-              ) : (
-                <Text
-                  style={{
-                    color: '#FAFAFA',
-                    fontSize: 28,
-                    fontWeight: '700',
-                    marginBottom: 4,
-                  }}
-                >
-                  {totalImages}
-                </Text>
-              )}
-              <Text
-                style={{ color: '#A3A3A3', fontSize: 13, fontWeight: '500' }}
-              >
-                Images Created
-              </Text>
-            </View>
-
-            {/* Cache Storage Card */}
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: '#171717',
-                padding: 20,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: '#262626',
-              }}
-            >
-              <Ionicons
-                name='server-outline'
-                size={24}
-                color='#FAFAFA'
-                style={{ marginBottom: 16 }}
-              />
-              {isLoading ? (
-                <ActivityIndicator
-                  size='small'
-                  color='#FAFAFA'
-                  style={{ alignSelf: 'flex-start', marginVertical: 4 }}
-                />
-              ) : (
-                <Text
-                  style={{
-                    color: '#FAFAFA',
-                    fontSize: 24,
-                    fontWeight: '700',
-                    marginBottom: 8,
-                  }}
-                  numberOfLines={1}
-                >
-                  {cacheSize}
-                </Text>
-              )}
-              <Text
-                style={{ color: '#A3A3A3', fontSize: 13, fontWeight: '500' }}
-              >
-                Cache Storage
-              </Text>
-            </View>
+            <InsightCard
+              icon='images-outline'
+              value={totalImages}
+              label='Images Created'
+              isLoading={isLoading}
+            />
+            <InsightCard
+              icon='server-outline'
+              value={cacheSize}
+              label='Cache Storage'
+              isLoading={isLoading}
+              valueFontSize={24}
+            />
           </View>
         </View>
 
@@ -259,84 +255,27 @@ export default function Settings() {
             About
           </Text>
 
-          <TouchableOpacity
+          <SettingsRow
+            icon='logo-github'
+            title='GitHub Repository'
+            subtitle='View the source code'
             onPress={handleOpenGithub}
-            activeOpacity={0.7}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: '#171717',
-              padding: 16,
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: '#262626',
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginRight: 16,
-              }}
-            >
-              <Ionicons name='logo-github' size={24} color='#FAFAFA' />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{ color: '#FAFAFA', fontSize: 16, fontWeight: '600' }}
-              >
-                GitHub Repository
-              </Text>
-              <Text style={{ color: '#A3A3A3', fontSize: 13, marginTop: 2 }}>
-                View the source code
-              </Text>
-            </View>
-            <Ionicons name='chevron-forward' size={20} color='#666' />
-          </TouchableOpacity>
+            showChevron
+          />
 
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: '#171717',
-              padding: 16,
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: '#262626',
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginRight: 16,
-              }}
-            >
-              <Ionicons
-                name='information-circle-outline'
-                size={24}
-                color='#FAFAFA'
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{ color: '#FAFAFA', fontSize: 16, fontWeight: '600' }}
-              >
-                Version
-              </Text>
-              <Text style={{ color: '#A3A3A3', fontSize: 13, marginTop: 2 }}>
-                Chroma AI v{Constants.expoConfig?.version ?? '1.0.0'}
-              </Text>
-            </View>
-          </View>
+          <SettingsRow
+            icon='download-outline'
+            title='Check for Updates'
+            subtitle={
+              isCheckingUpdate
+                ? 'Checking...'
+                : 'Download the latest release from GitHub'
+            }
+            onPress={handleCheckForUpdate}
+            disabled={isCheckingUpdate}
+            isLoading={isCheckingUpdate}
+            showChevron
+          />
         </View>
 
         {/* Danger Zone */}
@@ -353,55 +292,35 @@ export default function Settings() {
             Danger Zone
           </Text>
 
-          <TouchableOpacity
+          <SettingsRow
+            icon='trash-outline'
+            iconColor='#FF3B30'
+            iconBgColor='rgba(255, 59, 48, 0.1)'
+            title='Clear Cache & Data'
+            subtitle='Delete all generated history and clean storage'
             onPress={() => setIsConfirmDialogVisible(true)}
             disabled={isClearing}
-            activeOpacity={0.7}
+            isLoading={isClearing}
+          />
+        </View>
+
+        {/* Version Footer */}
+        <TouchableOpacity
+          onPress={() => Linking.openURL('https://chroma.lazyshrey.in')}
+          activeOpacity={0.6}
+        >
+          <Text
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: 'rgba(250, 250, 250, 0.05)',
-              padding: 16,
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: 'rgba(110, 110, 110, 0.2)',
+              textAlign: 'center',
+              color: '#444',
+              fontSize: 12,
+              marginTop: 8,
+              marginBottom: 40,
             }}
           >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                backgroundColor: 'rgba(255, 59, 48, 0.1)',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginRight: 16,
-              }}
-            >
-              {isClearing ? (
-                <ActivityIndicator size='small' color='#FF3B30' />
-              ) : (
-                <Ionicons name='trash-outline' size={24} color='#FF3B30' />
-              )}
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{ color: '#ffffffff', fontSize: 16, fontWeight: '600' }}
-              >
-                Clear Cache & Data
-              </Text>
-              <Text
-                style={{
-                  color: 'rgba(177, 177, 177, 0.8)',
-                  fontSize: 13,
-                  marginTop: 2,
-                }}
-              >
-                Delete all generated history and clean storage
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+            Chroma AI v{currentVersion}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Dynamic Status Dialog */}
@@ -615,22 +534,3 @@ export default function Settings() {
     </View>
   );
 }
-
-// Helper component to auto-trigger the Dialog once mounted
-const AutoTrigger = () => {
-  return (
-    <Dialog.Trigger asChild>
-      <AutoClickView />
-    </Dialog.Trigger>
-  );
-};
-
-// Ensure trigger fires
-const AutoClickView = ({ onPress }: any) => {
-  useEffect(() => {
-    if (onPress) {
-      setTimeout(onPress, 50);
-    }
-  }, [onPress]);
-  return <View style={{ display: 'none' }} />;
-};
